@@ -10,6 +10,7 @@ def install(package):
 
 from spyre import server
 import data
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -109,7 +110,7 @@ class NOAA_web_page(server.App):
             "label": "Show data"
         }]
 
-    tabs = ["Plot", "Table"]
+    tabs = ["Table", "Plot"]
 
     outputs = [
         {
@@ -141,25 +142,28 @@ class NOAA_web_page(server.App):
                 temp = []
         return temp
         
-    def __get_all_data__(self, params):
-        many_df = []
+    def __init__(self):
+        df_data = []
         for i in range(1, 28):
-            many_df.append(data._load_data_to_df(i))
-        df = data._merge_df(many_df)
+            df_data.append(data._load_data_to_df(i))
+        df_new_data = []
+        for i in range(0, 27):
+            df_new_data.append(data._parse_data(df_data[i]))
+            
+        self.df = data._merge_df(df_new_data)
 
-        df = df.loc[df['Year'].isin(self.__parse_range__(params['range_years'])) & df['Week'].isin(self.__parse_range__(params['range_weeks'])) & (df['Region'] == params['region_index'])]
-        df = df.sort_values('Year')
-        df = df.reset_index()
-        return df[['Year', 'Week', 'SMN', 'SMT', 'Region', 'VHI', 'VCI', 'TCI']]
+        #return self.df
         
     def __get_data__(self, params):
-        df = self.__get_all_data__(params)
+        df = self.df.loc[self.df['Year'].isin(self.__parse_range__(params['range_years'])) & self.df['Week'].isin(self.__parse_range__(params['range_weeks'])) & (self.df['Region'] == int(params['region_index']))]
+        df = df.sort_values('Year')
+        df = df.reset_index()
         return df[['Year', 'Week', 'SMN', 'SMT', 'Region', params['index']]]
         
         
     def __get_plot__(self, params):
         df = self.__get_data__(params)
-        df_hm = self.__get_all_data__(params)
+        df_hm = self.df.loc[self.df['Year'].isin(self.__parse_range__(params['range_years'])) & self.df['Week'].isin(self.__parse_range__(params['range_weeks'])) & (self.df['Region'] == int(params['region_index']))]
         df = df.sort_values(params['index'], ascending=False)
         pl = plt.figure(figsize = (18,12))
         if params['type_of_plot'] == "Scatterplot":
@@ -167,11 +171,16 @@ class NOAA_web_page(server.App):
         elif params['type_of_plot'] == "Lineplot":
             ax = sns.lineplot(x=params['column'], y=params['index'], data=df)
         elif params['type_of_plot'] == "Heatmap":
-            df_hm['VHI'] = [float(i) for i in df_hm['VHI']]
-            df_hm['TCI'] = [float(i) for i in df_hm['TCI']]
-            df_hm['VCI'] = [float(i) for i in df_hm['VCI']]
-            df_hm['SMN'] = [float(i) for i in df_hm['SMN']]
-            df_hm['SMT'] = [float(i) for i in df_hm['SMT']]
+            #df_hm['VHI'] = [float(i) for i in df_hm['VHI']]
+            df_hm['VHI'] = pd.to_numeric(df_hm['VHI'])
+            #df_hm['TCI'] = [float(i) for i in df_hm['TCI']]
+            df['TCI'] = pd.to_numeric(df_hm['TCI'])
+            #df_hm['VCI'] = [float(i) for i in df_hm['VCI']]
+            df_hm['VCI'] = pd.to_numeric(df_hm['VCI'])
+            #df_hm['SMN'] = [float(i) for i in df_hm['SMN']]
+            df_hm['SMN'] = pd.to_numeric(df_hm['SMN'])
+            #df_hm['SMT'] = [float(i) for i in df_hm['SMT']]
+            df_hm['SMT'] = pd.to_numeric(df_hm['SMT'])
             ax = sns.heatmap(data=df_hm[['VHI', 'VCI', 'TCI', 'SMN', 'SMT']].corr(method='pearson'), annot=True)
         elif params['type_of_plot'] == "Regplot":
             df[params['index']] = [int(float(i)) for i in df[params['index']]]
