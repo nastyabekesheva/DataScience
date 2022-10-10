@@ -166,6 +166,7 @@ cython_debug/
 ### Xcode ###
 ## User settings
 xcuserdata/
+*.xcodeproj
 
 ## Xcode 8 and earlier
 *.xcscmblueprint
