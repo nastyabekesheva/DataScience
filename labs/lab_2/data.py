@@ -40,10 +40,10 @@ def _download_data(index, min_year=1991, max_year=2022):
     path = f"vhi_{index}--{time}.csv"
     urllib.request.urlretrieve(url, path)
     print(f"File {path} downloaded successfully")
-    
+   
 def _load_data_to_df(index):
     columns = ['Year', 'Week', 'SMN', 'SMT', 'VCI', 'TCI', 'VHI', 'None']
-    df = pd.read_csv(Path(f"assets/vhi_{index}--10-6-2022--0:27.csv"), names = columns)
+    df = pd.read_csv(f"labs/lab_2/assets/vhi_{index}--10-6-2022--0:27.csv", names = columns)
     df = df.iloc[: , :-1]
     df.drop(index=df.index[0],
         axis=0,
